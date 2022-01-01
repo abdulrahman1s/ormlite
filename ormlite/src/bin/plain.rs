@@ -90,5 +90,27 @@ async fn main() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .fetch_all(&mut conn)
         .await?;
     println!("raw query: {:?}", people);
+
+    Person::insert()
+        .values(vec![])
+        .conflict("(id) do nothing")
+        .fetch_all(&mut conn);
+
+    Person::insert()
+        .values(vec![])
+        .conflict(
+            "(id) set name = excluded.name\
+        , limit = excluded.limit",
+        )
+        .fetch_all(&mut conn);
+
+    Person::update()
+        .set("age = ?")
+        .bind(30u32)
+        .filter("id = ?", 1)
+        .execute(&mut conn);
+
+    // the caller (fetch_all/fetch_one vs execute should modify the returning behavior.
+
     Ok(())
 }
