@@ -99,7 +99,7 @@ pub trait OrmliteCodegen {
             attr.table_name, field_names, params
         );
 
-        let query_bindings = fields.iter().map(|f| {
+        let query_bindings = filter_fields(fields).map(|f| {
             let name = &f.ident;
             quote! {
                 q = q.bind(self.#name);
