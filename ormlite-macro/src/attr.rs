@@ -12,6 +12,7 @@ pub struct ModelAttributes {
 pub struct ColumnAttributes {
     pub primary_key: bool,
     pub default: bool,
+    pub skip: bool,
 }
 
 #[derive(Builder, Debug)]
@@ -30,4 +31,5 @@ pub struct ColumnMeta {
     pub column_type: Type,
     pub marked_primary_key: bool,
     pub has_database_default: bool,
+    pub skiped: bool,
 }

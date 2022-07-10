@@ -14,12 +14,12 @@ pub static CREATE_TABLE_SQL: &str =
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = ormlite::SqliteConnection::connect(":memory:").await.unwrap();
+    let mut conn = ormlite::SqliteConnection::connect(":memory:")
+        .await
+        .unwrap();
     env_logger::init();
 
-    ormlite::query(CREATE_TABLE_SQL)
-        .execute(&mut conn)
-        .await?;
+    ormlite::query(CREATE_TABLE_SQL).execute(&mut conn).await?;
 
     // You can insert the model directly.
     let mut john = Person {

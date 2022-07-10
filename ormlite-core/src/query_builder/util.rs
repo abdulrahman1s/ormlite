@@ -48,7 +48,6 @@ pub fn replace_placeholders<T: Iterator<Item = String>>(
     Ok((buf, placeholder_count))
 }
 
-
 pub fn query_as_with_recast_lifetime<'q, 'r, DB, Model>(
     s: &'q str,
     args: QueryBuilderArgs<'r, DB>,
@@ -67,7 +66,6 @@ where
     sqlx::query_as_with(s, recast_args)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,7 +81,10 @@ mod tests {
             "SELECT * FROM users WHERE id = ? OR id = ? OR id = ?",
             &mut placeholder_generator,
         )?;
-        assert_eq!(sql, "SELECT * FROM users WHERE id = $1 OR id = $2 OR id = $3");
+        assert_eq!(
+            sql,
+            "SELECT * FROM users WHERE id = $1 OR id = $2 OR id = $3"
+        );
         assert_eq!(placeholder_count, 3);
         Ok(())
     }

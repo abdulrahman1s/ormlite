@@ -1,7 +1,7 @@
 use crate::error::{Error, Result};
+use crate::model::Model;
 use crate::query_builder::args::QueryBuilderArgs;
 use crate::query_builder::{util, Placeholder};
-use crate::model::Model;
 
 use sqlx::database::HasArguments;
 
