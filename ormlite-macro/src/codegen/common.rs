@@ -1,4 +1,4 @@
-use crate::attr;
+use crate::{attr, ColumnAttributes};
 use ormlite_core::query_builder::Placeholder;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -26,12 +26,31 @@ fn get_field_name_tokens(
 ) -> impl Iterator<Item = TokenStream> + '_ {
     fields
         .iter()
+        .filter(|f| {
+            for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
+                let args: ColumnAttributes = attr.parse_args().unwrap();
+                if args.skip {
+                    return false;
+                }
+            }
+            return true;
+        })
         .map(|f| f.ident.as_ref().unwrap().to_string().into_token_stream())
 }
 
 fn get_field_names(fields: &Punctuated<Field, Comma>) -> impl Iterator<Item = String> + '_ {
     fields
         .iter()
+        .filter(|f| {
+            for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
+                let args: ColumnAttributes = attr.parse_args().unwrap();
+
+                if args.skip {
+                    return false;
+                }
+            }
+            return true;
+        })
         .map(|f| f.ident.as_ref().unwrap().to_string().replace("r#", ""))
 }
 
