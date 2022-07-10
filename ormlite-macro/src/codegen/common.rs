@@ -6,11 +6,23 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{DeriveInput, Field};
 
+fn filter_fields(fields: &Punctuated<Field, Comma>) -> impl Iterator<Item = &Field> {
+    fields.iter().filter(|f| {
+        for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
+            let args: ColumnAttributes = attr.parse_args().unwrap();
+            if args.skip {
+                return false;
+            }
+        }
+        return true;
+    })
+}
+
 /// Given the fields of a ModelBuilder struct, return the quoted code.
 fn generate_query_binding_code_for_partial_model(
     fields: &Punctuated<Field, Comma>,
 ) -> impl Iterator<Item = TokenStream> + '_ {
-    fields.iter().map(|f| {
+    filter_fields(fields).map(|f| {
         let name = &f.ident;
         quote! {
             if let Some(value) = self.#name {
@@ -24,34 +36,11 @@ fn generate_query_binding_code_for_partial_model(
 fn get_field_name_tokens(
     fields: &Punctuated<Field, Comma>,
 ) -> impl Iterator<Item = TokenStream> + '_ {
-    fields
-        .iter()
-        .filter(|f| {
-            for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
-                let args: ColumnAttributes = attr.parse_args().unwrap();
-                if args.skip {
-                    return false;
-                }
-            }
-            return true;
-        })
-        .map(|f| f.ident.as_ref().unwrap().to_string().into_token_stream())
+    filter_fields(fields).map(|f| f.ident.as_ref().unwrap().to_string().into_token_stream())
 }
 
 fn get_field_names(fields: &Punctuated<Field, Comma>) -> impl Iterator<Item = String> + '_ {
-    fields
-        .iter()
-        .filter(|f| {
-            for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
-                let args: ColumnAttributes = attr.parse_args().unwrap();
-
-                if args.skip {
-                    return false;
-                }
-            }
-            return true;
-        })
-        .map(|f| f.ident.as_ref().unwrap().to_string().replace("r#", ""))
+    filter_fields(fields).map(|f| f.ident.as_ref().unwrap().to_string().replace("r#", ""))
 }
 
 /// bool whether the given type is `String`
@@ -73,7 +62,7 @@ pub trait OrmliteCodegen {
         let id = &attr.primary_key;
         let fields = crate::util::get_fields(ast);
         let field_names = get_field_name_tokens(fields);
-        let n_fields = fields.len();
+        let n_fields = field_names.size_hint().1.unwrap();
 
         quote! {
             fn table_name() -> &'static str {
@@ -100,8 +89,7 @@ pub trait OrmliteCodegen {
         let fields = crate::util::get_fields(ast);
         let field_names = get_field_names(fields).collect::<Vec<_>>().join(", ");
         let mut placeholder = Self::raw_placeholder();
-        let params = fields
-            .iter()
+        let params = filter_fields(fields)
             .map(|_| placeholder.next().unwrap())
             .collect::<Vec<_>>()
             .join(", ");
@@ -154,8 +142,7 @@ pub trait OrmliteCodegen {
         );
 
         let id_field = quote::format_ident!("{}", attr.primary_key);
-        let query_bindings = fields
-            .iter()
+        let query_bindings = filter_fields(fields)
             .filter(|f| &f.ident.as_ref().unwrap().to_string() != &attr.primary_key)
             .map(|f| {
                 let name = &f.ident;
@@ -308,13 +295,13 @@ pub trait OrmliteCodegen {
 
         let fields = crate::util::get_fields(ast);
 
-        let settable = fields.iter().map(|f| {
+        let settable = filter_fields(fields).map(|f| {
             let name = &f.ident;
             let ty = &f.ty;
             quote! { #name: std::option::Option<#ty> }
         });
 
-        let methods = fields.iter().map(|f| {
+        let methods = filter_fields(fields).map(|f| {
             let name = &f.ident;
             let ty = &f.ty;
             if ty_is_string(&f.ty) {
@@ -334,7 +321,7 @@ pub trait OrmliteCodegen {
             }
         });
 
-        let build_modified_fields = fields.iter().map(|f| {
+        let build_modified_fields = filter_fields(fields).map(|f| {
             let name = &f.ident.as_ref().unwrap();
             let name_str = name.to_string();
             quote! {
@@ -344,7 +331,7 @@ pub trait OrmliteCodegen {
             }
         });
 
-        let fields_none = fields.iter().map(|f| {
+        let fields_none = filter_fields(fields).map(|f| {
             let name = &f.ident;
             quote! {
                 #name: None
@@ -478,8 +465,7 @@ pub trait OrmliteCodegen {
         let model_builder = quote::format_ident!("{}", attr.insert_struct.as_ref().unwrap());
         let pub_marker = &ast.vis;
         let fields = crate::util::get_fields(ast);
-        let struct_fields = fields
-            .iter()
+        let struct_fields = filter_fields(fields)
             .zip(attr.columns.iter())
             .filter(|(_f, col_meta)| !col_meta.has_database_default)
             .map(|(f, _)| {
