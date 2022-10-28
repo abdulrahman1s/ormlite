@@ -1,5 +1,5 @@
-use crate::codegen::common::OrmliteCodegen;
 use crate::attr;
+use crate::codegen::common::OrmliteCodegen;
 use ormlite_core::query_builder::Placeholder;
 use proc_macro2::TokenStream;
 use quote::quote;

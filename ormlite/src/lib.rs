@@ -15,7 +15,7 @@ pub use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection, SqlitePool, Sqlit
 pub mod model;
 
 pub mod query_builder {
-    pub use ormlite_core::query_builder::{SelectQueryBuilder, Placeholder};
+    pub use ormlite_core::query_builder::{Placeholder, SelectQueryBuilder};
 }
 
 pub mod types {

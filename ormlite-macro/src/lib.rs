@@ -22,6 +22,7 @@ fn finish_table_meta(ast: &DeriveInput, mut builder: TableMetaBuilder) -> TableM
     let mut cols = fields
         .into_iter()
         .map(|f| build_column_meta(f))
+        .filter(|f| !f.skiped)
         .collect::<Vec<ColumnMeta>>();
     let mut primary_key = cols
         .iter()
@@ -74,6 +75,7 @@ fn build_column_meta(f: &syn::Field) -> ColumnMeta {
     builder.column_type(f.ty.clone());
     builder.marked_primary_key(false);
     builder.has_database_default(false);
+    builder.skiped(false);
     for attr in f.attrs.iter().filter(|a| a.path.is_ident("ormlite")) {
         let args: ColumnAttributes = attr.parse_args().unwrap();
         if args.primary_key {
@@ -82,6 +84,9 @@ fn build_column_meta(f: &syn::Field) -> ColumnMeta {
         }
         if args.default {
             builder.has_database_default(true);
+        }
+        if args.skip {
+            builder.skiped(true);
         }
     }
     builder.build().unwrap()
